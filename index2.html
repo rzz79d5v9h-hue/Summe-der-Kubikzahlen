@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Summe der Kubikzahlen als Quadrat</title>
+<style>
+:root{--bg:#fff;--fg:#1f1e1d;--fg2:#5f5e5a;--line:rgba(0,0,0,.4);--line2:rgba(0,0,0,.75)}
+@media (prefers-color-scheme: dark){:root{--bg:#1f1e1d;--fg:#f1efe8;--fg2:#b4b2a9;--line:rgba(255,255,255,.35);--line2:rgba(255,255,255,.8)}}
+body{margin:0;padding:24px 16px;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:720px;margin:0 auto}
+h1{font-size:22px;font-weight:500;margin:0 0 4px}
+p.sub{margin:0 0 16px;color:var(--fg2);font-size:15px}
+.ctl{display:flex;align-items:center;gap:12px;margin:0 0 8px;font-size:14px;color:var(--fg2)}
+.ctl span.v{min-width:52px;color:var(--fg)}
+svg{display:block;width:100%;height:auto}
+.gn{transition:opacity .15s}
+svg text{font-size:12px;fill:var(--fg)}
+svg text.b{font-size:14px;font-weight:500}
+</style>
+</head>
+<body>
+<main>
+<h1>Summe der Kubikzahlen als Quadrat</h1>
+<p class="sub">Das k-te Winkelstück hat die Fläche k³ und besteht aus k Quadraten der Seitenlänge k. Bei geraden k bleiben nur an den beiden Enden des Winkels halbe Quadrate übrig.</p>
+<div class="ctl"><span>n</span><input type="range" id="n" min="1" max="6" value="5" style="flex:0 1 240px"><span class="v" id="nl">n = 5</span></div>
+<svg id="s" viewBox="0 0 780 400" role="img" aria-label="Quadrat der Seitenlänge 1+2+...+n, zerlegt in Winkelstücke mit den Flächen 1³ bis n³"></svg>
+</main>
+<script>
+var S=360,X0=40,Y0=20;
+var cols=['#7F77DD','#1D9E75'];
+function rect(x,y,w,h,fill,u){
+  return '<rect x="'+(X0+x*u)+'" y="'+(Y0+y*u)+'" width="'+(w*u)+'" height="'+(h*u)+'" fill="'+fill+'" stroke="var(--line)" stroke-width="0.5"/>';
+}
+function label(x,y,w,h,txt,u){
+  if(w*u<26||h*u<16)return '';
+  return '<text x="'+(X0+(x+w/2)*u)+'" y="'+(Y0+(y+h/2)*u)+'" text-anchor="middle" dominant-baseline="central">'+txt+'</text>';
+}
+function render(n){
+  var T=[0];for(var k=1;k<=n;k++)T.push(T[k-1]+k);
+  var u=S/T[n];
+  var h='<defs>';
+  [0,1].forEach(function(i){
+    h+='<pattern id="hp'+i+'" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
+      +'<rect width="6" height="6" fill="'+cols[i]+'" fill-opacity=".15"/>'
+      +'<line x1="0" y1="0" x2="0" y2="6" stroke="'+cols[i]+'" stroke-width="2"/></pattern>';
+  });
+  h+='</defs>';
+  for(var k=1;k<=n;k++){
+    var a=T[k-1],ci=k%2,c=cols[ci],even=(k%2===0);
+    var w=even?(k-2)/2:(k-1)/2;
+    var g='<g class="gn" data-k="'+k+'">';
+    g+=rect(a,a,k,k,c,u).replace('fill="'+c+'"','fill="'+c+'" fill-opacity=".7"');
+    g+=label(a,a,k,k,k+'²',u);
+    for(var j=0;j<w;j++){
+      var y1=a-(j+1)*k;
+      g+=rect(a,y1,k,k,c,u).replace('fill="'+c+'"','fill="'+c+'" fill-opacity=".4"');
+      g+=rect(y1,a,k,k,c,u).replace('fill="'+c+'"','fill="'+c+'" fill-opacity=".4"');
+      g+=label(a,y1,k,k,k+'²',u)+label(y1,a,k,k,k+'²',u);
+    }
+    if(even){
+      g+=rect(a,0,k,k/2,'url(#hp'+ci+')',u)+rect(0,a,k/2,k,'url(#hp'+ci+')',u);
+      g+=label(a,0,k,k/2,'½·'+k+'²',u)+label(0,a,k/2,k,'½·'+k+'²',u);
+    }
+    var pts=[[a,0],[a+k,0],[a+k,a+k],[0,a+k],[0,a],[a,a]].map(function(p){return (X0+p[0]*u)+','+(Y0+p[1]*u);}).join(' ');
+    g+='<polygon points="'+pts+'" fill="none" stroke="var(--line2)" stroke-width="1.5" stroke-linejoin="round"/>';
+    h+=g+'</g>';
+  }
+  var sum=[],tot=0;
+  for(var k=1;k<=n;k++){
+    var y=Y0+22+(k-1)*34,v=k*k*k,ci=k%2;tot+=v;sum.push(v);
+    var sw=cols[ci];
+    var txt=(k%2===0)
+      ? k+'³: '+(k-1)+(k===2?' Quadrat':' Quadrate')+' + 2 Halbe'
+      : k+'³: '+k+(k===1?' Quadrat':' Quadrate');
+    h+='<g class="row" data-k="'+k+'"><rect x="436" y="'+(y-8)+'" width="16" height="16" fill="'+sw+'" stroke="var(--line)" stroke-width="0.5"/>'
+      +'<text x="462" y="'+y+'" dominant-baseline="central">'+txt+' = '+v+'</text></g>';
+  }
+  var yt=Y0+22+n*34+6;
+  h+='<line x1="436" y1="'+(yt-18)+'" x2="650" y2="'+(yt-18)+'" stroke="var(--line)" stroke-width="0.5"/>';
+  h+='<text class="b" x="436" y="'+yt+'" dominant-baseline="central">Insgesamt:</text>';
+  h+='<text class="b" x="436" y="'+(yt+22)+'" dominant-baseline="central">'+sum.join(' + ')+' = '+tot+'</text>';
+  h+='<text class="b" x="436" y="'+(yt+44)+'" dominant-baseline="central">= '+T[n]+'² = ('+Array.apply(null,Array(n)).map(function(_,i){return i+1;}).join('+')+')²</text>';
+  var s=document.getElementById('s');
+  s.innerHTML=h;
+  s.querySelectorAll('[data-k]').forEach(function(el){
+    el.addEventListener('mouseenter',function(){
+      var k=el.getAttribute('data-k');
+      s.querySelectorAll('.gn').forEach(function(g){g.style.opacity=g.getAttribute('data-k')===k?1:.2;});
+    });
+    el.addEventListener('mouseleave',function(){
+      s.querySelectorAll('.gn').forEach(function(g){g.style.opacity=1;});
+    });
+  });
+  document.getElementById('nl').textContent='n = '+n;
+}
+document.getElementById('n').addEventListener('input',function(e){render(+e.target.value);});
+render(5);
+</script>
+</body>
+</html>
